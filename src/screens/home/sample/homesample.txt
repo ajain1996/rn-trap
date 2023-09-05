@@ -1,0 +1,284 @@
+import React, { useContext, useEffect, useState } from "react";
+import { Alert, Dimensions, Easing, Image, ImageBackground, ScrollView, Share, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import HomeItem from "./components/HomeItem";
+import Swiper from 'react-native-swiper';
+import assets from "../../assets";
+import HomeIcon from "./components/HomeIcon";
+import { HomeContext } from "../../API/Context";
+import { Size } from "../../constants";
+import sound from 'react-native-sound';
+import { SpaceBetweenRow } from "../../components/Wrapper";
+import SimpleModal from "../../components/SimpleModal";
+import MText from "../../components/Text";
+import Row from "../../components/Row";
+import { Styles } from "../../styles";
+import { Animated } from "react-native";
+import Bell from "./components/Bell";
+import LeftBell from "./components/LeftBell";
+import RightBell from "./components/RightBell";
+
+const windowWidth = Dimensions.get("window").width;
+const windowHeight = Dimensions.get("window").height;
+
+interface HomeScreenProps {
+    navigation?: any;
+    homeData?: Array<object> | undefined;
+}
+
+sound.setCategory('Playback');
+
+const HomeScreen = ({ navigation }: HomeScreenProps) => {
+    const { homeData } = useContext(HomeContext);
+    const [musicModal, setMusicModal] = useState(false);
+    const [allSongs, setAllSongs] = useState([])
+
+    const playSound = () => {
+        var ding = new sound(ding, sound.MAIN_BUNDLE, (error: any) => {
+            if (error) {
+                console.log('Failed to load the sound', error);
+                return;
+            } else {
+                // console.log('Duration in seconds: ' + whoosh.getDuration() + 'Number of the channels: ' + whoosh.getNumberOfChannels here());
+            }
+        });
+
+        return ding;
+    }
+
+    useEffect(() => {
+        var requestOptions = {
+            method: 'GET',
+            redirect: 'follow'
+        };
+
+        fetch("https://bharat-app-api.vercel.app/api/deity/getallsongs/6470d04ddaf5f191d3423aff", requestOptions)
+            .then(response => response.text())
+            .then(result => {
+                setAllSongs(JSON.parse(result)?.data)
+                console.log(result)
+            })
+            .catch(error => console.log('error', error));
+    }, [])
+
+    const onShare = async () => {
+        try {
+            const result = await Share.share({
+                message: 'Share in Whatsapp, Instagram',
+            });
+            if (result.action === Share.sharedAction) {
+                if (result.activityType) {
+                    // shared with activity type of result.activityType
+                } else {
+                    // shared
+                }
+            } else if (result.action === Share.dismissedAction) {
+                // dismissed
+            }
+        } catch (error: any) {
+            Alert.alert(error.message);
+        }
+    };
+
+
+    return (
+        <ImageBackground source={assets.home_bg} style={styles.container} resizeMode="stretch">
+            <StatusBar hidden />
+            <Swiper horizontal={false} activeDot={<View style={styles.dotStyle} />}>
+                {homeData.map((item: any, index: number, array: any) => {
+                    return (
+                        <HomeItem
+                            item={item}
+                            key={index}
+                            navigation={navigation}
+                        />
+                    );
+                })}
+            </Swiper>
+            <View style={styles.itemContainer}>
+                {/* <View>
+                    <HomeIcon
+                        icon={assets.flower}
+                        text="Flower"
+                        isBg={true}
+                    />
+
+                    <HomeIcon
+                        icon={assets.shankh}
+                        text="shankh"
+                        isBg={true}
+                    // onPress={() => { playSound() }}
+                    />
+
+                    <HomeIcon
+                        icon={assets.send}
+                        text="Share"
+                        iconStyle={styles.icon3}
+                        isBg={true}
+                    />
+                </View> */}
+
+                {/* <View style={{ alignSelf: "flex-end" }}>
+                    <TouchableOpacity style={styles.musicBtn}>
+                        <Image
+                            source={assets.music2}
+                            style={styles.music_bg}
+                        />
+                        <Text style={styles.musicText}>Page name · Original Audio</Text>
+                    </TouchableOpacity>
+                </View> */}
+            </View>
+
+            <Image resizeMode="stretch"
+                source={assets.home_bg} style={styles.container}
+            />
+
+            {/* <Image resizeMode="stretch"
+                source={assets.arch} style={styles.arch}
+            />
+            <Image resizeMode="stretch"
+                source={assets.leftpillar} style={styles.leftpillar}
+            />
+            <Image resizeMode="stretch"
+                source={assets.rightpillar} style={styles.rightpillar}
+            /> */}
+            <SpaceBetweenRow style={{ width: "100%", paddingHorizontal: 50, position: "absolute", top: Size.w100 }}>
+                <LeftBell />
+                <RightBell />
+            </SpaceBetweenRow>
+
+            <SpaceBetweenRow style={{ marginHorizontal: 40, paddingBottom: 5, backgroundColor: "transparent", height: 40 }}>
+                <TouchableOpacity activeOpacity={0.6} style={styles.bottomTab} onPress={() => { }} />
+                <TouchableOpacity activeOpacity={0.6} style={styles.bottomTab} onPress={() => { }} />
+                <TouchableOpacity activeOpacity={0.6} style={styles.bottomTab} onPress={onShare} />
+                <TouchableOpacity activeOpacity={0.6} style={styles.bottomTab} onPress={() => { setMusicModal(true) }} />
+            </SpaceBetweenRow>
+
+            <SimpleModal
+                visible={musicModal}
+                setVisible={setMusicModal}
+                dismiss
+                closeOnSubmit
+                style={{ height: 420 }}
+                children={
+                    <>
+                        <TouchableOpacity style={styles.modalBadge} onPress={() => { setMusicModal(false) }} />
+                        <ScrollView>
+                            <View>
+                                {allSongs?.map((item, indx) => {
+                                    return (
+                                        <Row key={indx} style={{ paddingVertical: 6 }}>
+                                            <Image
+                                                source={assets.home_item_img}
+                                                resizeMode="contain"
+                                                style={{ width: 36, height: 42, borderRadius: 8, borderWidth: 5, borderColor: "#eee" }}
+                                            />
+                                            <View style={Styles.horizontalMargin}>
+                                                <MText style={styles.SongTitle}>{item?.name}</MText>
+                                                <ScrollView horizontal>
+                                                    <Row>
+                                                        {item?.artist?.map((res: any, indx2: number) => {
+                                                            return (
+                                                                <MText style={styles.SongSubTitle} key={indx2}>{'   '} -- {res}</MText>
+                                                            )
+                                                        })}
+                                                    </Row>
+                                                </ScrollView>
+                                            </View>
+                                        </Row>
+                                    )
+                                })}
+                            </View>
+                        </ScrollView>
+                    </>
+                }
+            />
+        </ImageBackground>
+    );
+};
+
+export default React.memo(HomeScreen);
+
+const styles = StyleSheet.create({
+    container2: {
+        position: "absolute",
+        top: 0
+    },
+    arch: {
+        width: windowWidth,
+        height: 230,
+        position: "absolute",
+        top: 0
+    },
+    leftpillar: {
+        width: 40,
+        height: Size.wHeight / 1.6,
+        position: "absolute",
+        bottom: 68
+    },
+    rightpillar: {
+        width: 40,
+        height: Size.wHeight / 1.6,
+        position: "absolute",
+        bottom: 68,
+        right: 0
+    },
+    carousel: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    dotStyle: {
+        width: 0, height: 0
+    },
+    container: {
+        height: windowHeight - 0,
+        width: windowWidth,
+        position: "absolute",
+        top: 0
+    },
+    itemContainer: {
+        position: "absolute",
+        bottom: 50,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: Size.wWidth,
+        padding: 20,
+    },
+    musicBtn: {
+        alignItems: "flex-end"
+    },
+    music_bg: {
+        width: 32, height: 32,
+        borderRadius: 100,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    music: {
+        width: 20, height: 20,
+        position: "absolute",
+    },
+    musicText: {
+        fontSize: 12,
+        fontWeight: "400",
+        color: "#fff",
+        marginTop: 6,
+        marginBottom: 10,
+    },
+    bottomTab: {
+        width: Size.wWidth / 5, height: Size.wWidth / 5.6, opacity: 0.6
+    },
+    SongTitle: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#000",
+    },
+    SongSubTitle: {
+        fontSize: 10,
+        fontWeight: "400",
+        color: "#000",
+    },
+    modalBadge: {
+        width: 80, height: 4, backgroundColor: "#dcdcdc", alignSelf: "center",
+        marginTop: 6,
+        marginBottom: 12
+    }
+});
